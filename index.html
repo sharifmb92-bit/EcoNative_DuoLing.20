@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Eco Nativo Dual</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1e1e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        :root {
+            --bg-me: #1e1e1e;
+            --bg-client: #ffffff;
+            --c-idle: #ea4335;   /* Rojo en reposo */
+            --c-me: #ff7a00;     /* Color Calabaza para ti */
+            --c-client: #34a853; /* Verde para el cliente */
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html { 
+            height: 100vh; 
+            max-height: 100vh;
+            overflow: hidden; 
+            background-color: #000;
+            display: flex; 
+            flex-direction: column;
+            user-select: none;
+            position: relative;
+        }
+
+        /* --- PANTALLA SUPERIOR (CLIENTE) --- */
+        #part-client {
+            flex: 1;
+            background-color: var(--bg-client);
+            transform: rotate(180deg);
+            display: flex; 
+            flex-direction: column;
+            padding: 40px 30px; 
+            justify-content: center; 
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            position: relative;
+        }
+
+        /* Fijo arriba del todo, pegado de forma segura a la barra de notificaciones */
+        #lang-label-wrapper {
+            position: absolute;
+            top: 0;
+            margin-top: calc(15px + env(safe-area-inset-top));
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        /* Evasión suave ante el recorrido del botón central */
+        .shift-label { transform: translateY(-20px); }
+
+        .lang-label {
+            font-size: 13px; 
+            font-weight: 900; 
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        #part-client .lang-label { color: #666; }
+
+        .text-display {
+            font-size: 26px; 
+            font-weight: 700; 
+            text-align: center;
+            min-height: 100px; 
+            width: 100%; 
+            line-height: 1.3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .client-text { color: #333; }
+        .me-text { color: #fff; }
+
+        /* --- PANTALLA INFERIOR (CONDUCTOR) --- */
+        #part-me {
+            flex: 1;
+            background-color: var(--bg-me);
+            color: white;
+            display: flex; 
+            flex-direction: column;
+            padding: 40px 30px; 
+            justify-content: center; 
+            align-items: center;
+            position: relative;
+            padding-bottom: calc(40px + env(safe-area-inset-bottom));
+        }
+
+        /* --- CONTROL CENTRAL CON TRANSICIÓN PROGRESIVA --- */
+        .controls {
+            position: absolute; 
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 150; 
+            pointer-events: none;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-wrapper {
+            position: absolute;
+            transform: translateY(0);
+            transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+        }
+
+        .mic-btn {
+            width: 90px; 
+            height: 90px; 
+            border-radius: 50%;
+            border: 6px solid #000; 
+            background: var(--c-idle); 
+            color: white; 
+            font-size: 35px; 
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: background-color 0.5s ease, box-shadow 0.5s ease, transform 0.5s ease;
+        }
+
+        /* Distancias de recorrido libre expandidas y limpias */
+        .pos-me .mic-wrapper { transform: translateY(70px); }
+        .pos-client .mic-wrapper { transform: translateY(-75px); }
+
+        .mode-me .mic-btn { 
+            background: var(--c-me); 
+            transform: scale(1.05); 
+            box-shadow: 0 0 35px var(--c-me); 
+        }
+        
+        /* Animación activa pulsante de onda expansiva para el cliente */
+        .mode-client .mic-btn { 
+            background: var(--c-client); 
+            transform: scale(1.05); 
+            animation: pulse-green 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 25px rgba(52, 168, 83, 0.6); }
+            50% { box-shadow: 0 0 45px rgba(52, 168, 83, 0.9), 0 0 0 15px rgba(52, 168, 83, 0%); }
+        }
+
+        /* --- PANEL DE BANDERAS COMPLETO --- */
+        .flags {
+            position: absolute; 
+            bottom: calc(25px + env(safe-area-inset-bottom)); 
+            display: flex; 
+            gap: 15px;
+            z-index: 200; 
+            pointer-events: auto;
+        }
+        
+        .flag-btn {
+            font-size: 28px; 
+            background: rgba(255,255,255,0.05); 
+            border: 3px solid transparent; 
+            cursor: pointer; 
+            border-radius: 50%; 
+            width: 54px; 
+            height: 54px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.3s ease;
+        }
+        
+        .flag-btn.active { 
+            border-color: var(--c-me); 
+            background: rgba(255,255,255,0.15); 
+            transform: scale(1.1); 
+        }
+
+        #splash {
+            position: fixed; 
+            inset: 0; 
+            background: #1e1e1e; 
+            z-index: 1000;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            color: white; 
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .hidden { opacity: 0; visibility: hidden; }
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <div style="font-size: 70px; margin-bottom: 20px;">🗣️</div>
+        <h2 style="letter-spacing: 5px;">ECO NATIVO DUAL</h2>
+    </div>
+
+    <div id="part-client">
+        <div id="lang-label-wrapper"><div class="lang-label" id="label-client">INGLÉS</div></div>
+        <div class="text-display client-text" id="text-client">...</div>
+    </div>
+
+    <div class="controls" id="control-zone">
+        <div class="mic-wrapper">
+            <button class="mic-btn" id="main-mic" onclick="toggleApp()">🎙️</button>
+        </div>
+    </div>
+
+    <div id="part-me">
+        <div class="lang-label">ESPAÑOL (TÚ)</div>
+        <div class="text-display me-text" id="text-me">Pulsa el botón para iniciar</div>
+        
+        <div class="flags">
+            <button class="flag-btn active" onclick="setLang('en', 'Inglés')">🇬🇧</button>
+            <button class="flag-btn" onclick="setLang('fr', 'Francés')">🇫🇷</button>
+            <button class="flag-btn" onclick="setLang('de', 'Alemán')">🇩🇪</button>
+            <button class="flag-btn" onclick="setLang('it', 'Italiano')">🇮🇹</button>
+        </div>
+    </div>
+
+    <script>
+        // medbasha - embedded system footprint
+        let targetLang = 'en';
+        let isRunning = false;
+        let currentTurn = 'me'; 
+        let autoStopTimer;
+
+        const langCodes = { 'en': 'en-US', 'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT' };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        window.onload = () => {
+            setTimeout(() => document.getElementById('splash').classList.add('hidden'), 2000);
+        };
+
+        // Cambios estéticos de selección de bandera
+        function setLang(lang, name) {
+            targetLang = lang;
+            document.getElementById('label-client').innerText = name;
+            document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            if(navigator.vibrate) navigator.vibrate(50);
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        function toggleApp() {
+            if (isRunning) {
+                stopConversation();
+            } else {
+                isRunning = true;
+                currentTurn = 'me';
+                startListening();
+            }
+        }
+
+        function updateButtonUI() {
+            const container = document.getElementById('control-zone');
+            const labelWrapper = document.getElementById('lang-label-wrapper');
+            
+            if (!isRunning) {
+                container.className = 'controls';
+                labelWrapper.className = '';
+                return;
+            }
+
+            if (currentTurn === 'me') {
+                container.className = 'controls pos-me mode-me';
+                labelWrapper.className = ''; 
+            } else {
+                container.className = 'controls pos-client mode-client';
+                labelWrapper.className = 'shift-label'; 
+            }
+        }
+
+        function startListening() {
+            if (!isRunning) return;
+
+            updateButtonUI();
+            
+            clearTimeout(autoStopTimer);
+            autoStopTimer = setTimeout(stopConversation, 15000);
+
+            if (currentTurn === 'me') {
+                recognition.lang = 'es-ES';
+                document.getElementById('text-me').innerText = "🎤 Habla ahora...";
+            } else {
+                recognition.lang = 'auto' in recognition ? 'auto' : langCodes[targetLang];
+                document.getElementById('text-client').innerText = "🎤 Escuchando...";
+            }
+
+            try { recognition.start(); } catch(e) {}
+        }
+
+        /* =========================================================================
+           ZONA DE MEJORAS 1: FILTRO DE VOCABULARIO LOCAL (CON TEXTO SANITIZADO)
+           ========================================================================= */
+        function internalContextFilter(text, contextTurn) {
+            let processed = text.trim();
+
+            const localizationMap = [
+                { match: /\bcarro\b/gi, replace: "coche" },
+                { match: /\bcarros\b/gi, replace: "coches" },
+                { match: /\bautobus\b/gi, replace: "autobús" },
+                { match: /\bbuses\b/gi, replace: "autobuses" },
+                { match: /\bboleto\b/gi, replace: "billete" },
+                { match: /\bboletos\b/gi, replace: "billetes" }
+            ];
+
+            if (contextTurn === 'client' && /^(sí,? lo he hecho\.?|si lo he hecho\.?)$/i.test(processed)) {
+                processed = "Sí, lo tengo.";
+            }
+
+            localizationMap.forEach(rule => {
+                processed = processed.replace(rule.match, rule.replace);
+            });
+
+            return processed.charAt(0).toUpperCase() + processed.slice(1);
+        }
+
+        /* =========================================================================
+           BLOQUE CONGELADO: MOTOR DE FLUJO Y TRADUCCIÓN CON TIEMPOS DE ESPERA
+           ========================================================================= */
+        recognition.onresult = async (event) => {
+            clearTimeout(autoStopTimer);
+            const transcript = event.results[0][0].transcript;
+            
+            const from = currentTurn === 'me' ? 'es' : 'auto'; 
+            const to = currentTurn === 'me' ? targetLang : 'es';
+
+            if (currentTurn === 'me') document.getElementById('text-me').innerText = transcript;
+            else document.getElementById('text-client').innerText = transcript;
+
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(transcript)}&langpair=${from}|${to}`);
+                const data = await res.json();
+                let translated = data.responseData.translatedText;
+
+                translated = internalContextFilter(translated, currentTurn === 'me' ? 'me' : 'client');
+
+                if (currentTurn === 'me') {
+                    document.getElementById('text-client').innerText = translated;
+                    speak(translated, langCodes[targetLang], () => {
+                        currentTurn = 'client';
+                        // Pausa de 1.5 segundos para la asimilación visual del texto antes de abrir micrófono
+                        setTimeout(startListening, 1500); 
+                    });
+                } else {
+                    document.getElementById('text-me').innerText = translated;
+                    speak(translated, 'es-ES', () => {
+                        currentTurn = 'me';
+                        // Pausa de 1.5 segundos para la asimilación visual del texto antes de abrir micrófono
+                        setTimeout(startListening, 1500); 
+                    });
+                }
+            } catch (e) {
+                console.error("Error traducción");
+                setTimeout(startListening, 1000);
+            }
+        };
+
+        recognition.onerror = () => { if (isRunning) setTimeout(startListening, 1000); };
+
+        function speak(text, lang, callback) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = lang;
+            u.rate = 0.95;
+            u.onend = callback;
+            window.speechSynthesis.speak(u);
+        }
+
+        function stopConversation() {
+            isRunning = false;
+            clearTimeout(autoStopTimer);
+            try { recognition.stop(); } catch(e) {}
+            window.speechSynthesis.cancel();
+            document.getElementById('text-me').innerText = "Modo reposo";
+            document.getElementById('text-client').innerText = "...";
+            updateButtonUI();
+        }
+
+        document.addEventListener("visibilitychange", () => { if (document.hidden) stopConversation(); });
+    </script>
+</body>
+</html>
