@@ -51,26 +51,26 @@
             position: relative;
         }
 
-        /* Fijo arriba del todo, pegado de forma segura a la barra de notificaciones */
+        /* Corregido: Ajuste de posición superior limpia */
         #lang-label-wrapper {
             position: absolute;
             top: 0;
-            margin-top: calc(15px + env(safe-area-inset-top));
+            margin-top: calc(20px + env(safe-area-inset-top));
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 10;
         }
 
-        /* Evasión suave ante el recorrido del botón central */
         .shift-label { transform: translateY(-20px); }
 
+        /* Corregido: Mayor tamaño y contraste para máxima visibilidad */
         .lang-label {
-            font-size: 13px; 
-            font-weight: 900; 
+            font-size: 16px; 
+            font-weight: 800; 
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
         }
 
-        #part-client .lang-label { color: #666; }
+        #part-client .lang-label { color: #222; }
 
         .text-display {
             font-size: 26px; 
@@ -99,7 +99,6 @@
             justify-content: center; 
             align-items: center;
             position: relative;
-            padding-bottom: calc(40px + env(safe-area-inset-bottom));
         }
 
         /* --- CONTROL CENTRAL CON TRANSICIÓN PROGRESIVA --- */
@@ -140,7 +139,6 @@
             transition: background-color 0.5s ease, box-shadow 0.5s ease, transform 0.5s ease;
         }
 
-        /* Distancias de recorrido libre expandidas y limpias */
         .pos-me .mic-wrapper { transform: translateY(70px); }
         .pos-client .mic-wrapper { transform: translateY(-75px); }
 
@@ -150,7 +148,6 @@
             box-shadow: 0 0 35px var(--c-me); 
         }
         
-        /* Animación activa pulsante de onda expansiva para el cliente */
         .mode-client .mic-btn { 
             background: var(--c-client); 
             transform: scale(1.05); 
@@ -162,10 +159,10 @@
             50% { box-shadow: 0 0 45px rgba(52, 168, 83, 0.9), 0 0 0 15px rgba(52, 168, 83, 0%); }
         }
 
-        /* --- PANEL DE BANDERAS COMPLETO --- */
+        /* --- PANEL DE BANDERAS CORREGIDO PARA EVITAR RECORTE --- */
         .flags {
             position: absolute; 
-            bottom: calc(25px + env(safe-area-inset-bottom)); 
+            bottom: calc(40px + env(safe-area-inset-bottom)); /* Subido para librar la barra de navegación del sistema */
             display: flex; 
             gap: 15px;
             z-index: 200; 
@@ -254,7 +251,6 @@
             setTimeout(() => document.getElementById('splash').classList.add('hidden'), 2000);
         };
 
-        // Cambios estéticos de selección de bandera
         function setLang(lang, name) {
             targetLang = lang;
             document.getElementById('label-client').innerText = name;
@@ -309,7 +305,7 @@
                 recognition.lang = 'es-ES';
                 document.getElementById('text-me').innerText = "🎤 Habla ahora...";
             } else {
-                recognition.lang = 'auto' in recognition ? 'auto' : langCodes[targetLang];
+                recognition.lang = langCodes[targetLang];
                 document.getElementById('text-client').innerText = "🎤 Escuchando...";
             }
 
@@ -349,7 +345,7 @@
             clearTimeout(autoStopTimer);
             const transcript = event.results[0][0].transcript;
             
-            const from = currentTurn === 'me' ? 'es' : 'auto'; 
+            const from = currentTurn === 'me' ? 'es' : targetLang; 
             const to = currentTurn === 'me' ? targetLang : 'es';
 
             if (currentTurn === 'me') document.getElementById('text-me').innerText = transcript;
@@ -366,14 +362,12 @@
                     document.getElementById('text-client').innerText = translated;
                     speak(translated, langCodes[targetLang], () => {
                         currentTurn = 'client';
-                        // Pausa de 1.5 segundos para la asimilación visual del texto antes de abrir micrófono
                         setTimeout(startListening, 1500); 
                     });
                 } else {
                     document.getElementById('text-me').innerText = translated;
                     speak(translated, 'es-ES', () => {
                         currentTurn = 'me';
-                        // Pausa de 1.5 segundos para la asimilación visual del texto antes de abrir micrófono
                         setTimeout(startListening, 1500); 
                     });
                 }
